@@ -12,6 +12,11 @@ import (
 // copy robfig/cron's crontab parser to cronlib.cron_parser.go
 // "github.com/robfig/cron"
 
+const (
+	OnMode  = true
+	OffMode = false
+)
+
 var (
 	ErrNotFoundJob     = errors.New("not found job")
 	ErrAlreadyRegister = errors.New("the job already in pool")
@@ -26,6 +31,16 @@ type loggerType func(level, s string)
 
 func SetLogger(logger loggerType) {
 	defualtLogger = logger
+}
+
+// panic call
+var panicCaller = func(srv, err string) {
+}
+
+type panicType func(srv, err string)
+
+func SetPanicCaller(p panicType) {
+	panicCaller = p
 }
 
 func New() *CronSchduler {
@@ -232,10 +247,18 @@ func AsyncMode() JobOption {
 	}
 }
 
+func TryCatchMode() JobOption {
+	return func(o *JobModel) error {
+		o.tryCatch = true
+		return nil
+	}
+}
+
 type JobModel struct {
 	srv        string
 	do         func()
 	async      bool
+	tryCatch   bool
 	ctx        context.Context
 	notifyChan chan int
 	spec       string
@@ -244,6 +267,10 @@ type JobModel struct {
 	exited  bool // ensure job worker is exited already
 
 	sync.RWMutex
+}
+
+func (j *JobModel) SetTryCatch(b bool) {
+	j.tryCatch = b
 }
 
 func (j *JobModel) validate() error {
@@ -267,7 +294,11 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 		// stdout do time cost
 		doTimeCostFunc = func() {
 			startTS := time.Now()
-			j.do()
+			if j.tryCatch {
+				tryCatch(j)
+			} else {
+				j.do()
+			}
 			defualtLogger("info",
 				fmt.Sprintf("service: %s has been finished, time cost: %s, spec: %s",
 					j.srv,
@@ -338,3 +369,20 @@ func (j *JobModel) notifySig() {
 	}
 }
 
+func tryCatch(job *JobModel) {
+	defer func() {
+		if e := recover(); e != nil {
+			panicCaller(
+				job.srv,
+				fmt.Sprintf("%v", e),
+			)
+
+			defualtLogger(
+				"error",
+				fmt.Sprintf("srv: %s, trycatch panicing %v", job.srv, e),
+			)
+		}
+	}()
+
+	job.do()
+}
