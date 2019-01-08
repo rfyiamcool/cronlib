@@ -273,6 +273,10 @@ func (j *JobModel) SetTryCatch(b bool) {
 	j.tryCatch = b
 }
 
+func (j *JobModel) SetAsyncMode(b bool) {
+	j.async = b
+}
+
 func (j *JobModel) validate() error {
 	if j.do == nil {
 		return ErrJobDOFuncNil
@@ -386,3 +390,4 @@ func tryCatch(job *JobModel) {
 
 	job.do()
 }
+
