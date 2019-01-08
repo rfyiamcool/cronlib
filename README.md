@@ -18,7 +18,7 @@ cron_parser.go import https://github.com/robfig/cron/blob/master/parser.go , tha
 
 ## Usage
 
-```
+```go
 package main
 
 // test for crontab spec
