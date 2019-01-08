@@ -9,6 +9,7 @@ cron_parser.go import https://github.com/robfig/cron/blob/master/parser.go , tha
 ## Feature
 
 * thread safe
+* add try catch mode
 * dynamic modify job cron
 * dynamic add job
 * stop service job
