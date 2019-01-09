@@ -255,16 +255,29 @@ func TryCatchMode() JobOption {
 }
 
 type JobModel struct {
-	srv        string
-	do         func()
-	async      bool
-	tryCatch   bool
+	// srv name
+	srv string
+
+	// callfunc
+	do func()
+
+	// if async = true; go func() { do() }
+	async bool
+
+	// try catch panic
+	tryCatch bool
+
+	// cron spec
+	spec string
+
 	ctx        context.Context
 	notifyChan chan int
-	spec       string
 
-	running bool // break for { ... } loop
-	exited  bool // ensure job worker is exited already
+	// break for { ... } loop
+	running bool
+
+	// ensure job worker is exited already
+	exited bool
 
 	sync.RWMutex
 }
@@ -390,4 +403,3 @@ func tryCatch(job *JobModel) {
 
 	job.do()
 }
-

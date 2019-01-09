@@ -18,7 +18,117 @@ cron_parser.go import https://github.com/robfig/cron/blob/master/parser.go , tha
 
 ## Usage
 
+### quick run
+
+```go
+func run() error {
+	cron := cronlib.New()
+
+	specList := map[string]string{
+		"risk.scan.total.1s":       "*/1 * * * * *",
+		"risk.scan.total.2s":       "*/2 * * * * *",
+		"risk.scan.total.3s":       "*/3 * * * * *",
+		"risk.scan.total.4s":       "*/4 * * * * *",
+		"risk.scan.total.5s.to.3s": "*/5 * * * * *",
+	}
+
+	for srv, spec := range specList {
+		tspec := spec // copy
+		ssrv := srv   // copy
+
+		// create job
+		job, err := cronlib.NewJobModel(
+			spec,
+			func() {
+				stdout(ssrv, tspec)
+			},
+		)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		// register srvName -> job
+		err = cron.Register(srv, job)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	cron.Start()
+	cron.Join()
+}
 ```
+
+### set job attr
+
+open async mode and try catch mode
+
+```go
+func run() error {
+	cron := cronlib.New()
+
+	// set async mode
+	job, err = cronlib.NewJobModel(
+		"0 * * * * *",
+		func(),
+		cronlib.AsyncMode(),
+		cronlib.TryCatchMode(),
+	)
+
+	...
+}
+```
+
+other method
+
+```go
+func run() error {
+	cron := cronlib.New()
+
+	// set async mode
+	job, err = cronlib.NewJobModel(
+		"0 * * * * *",
+		func(),
+	)
+
+	...
+
+	job.SetTryCatch(cronlib.OnMode)
+	job.SetAsyncMode(cronlib.OnMode)
+
+	...
+}
+
+```
+
+### stop job
+
+```go
+cron := cronlib.New()
+...
+cron.StopService(srvName)
+```
+
+### update job
+
+```go
+spec := "*/3 * * * * *"
+srv := "risk.scan.total.5s.to.3s"
+
+job, _ := cronlib.NewJobModel(
+	spec,
+	func() {
+		stdout(srv, spec)
+	},
+)
+
+err := cron.UpdateJobModel(srv, job)
+...
+```
+
+## Example
+
+```go
 package main
 
 // test for crontab spec
