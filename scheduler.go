@@ -330,7 +330,7 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 
 	// parse crontab spec
 	due, err := getNextDue(j.spec)
-	interval := due.Sub(time.Now())
+	interval := time.Until(due)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -349,7 +349,7 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 		case <-timer.C:
 			due, _ := getNextDue(j.spec)
 			timer.Reset(
-				due.Sub(time.Now()),
+				time.Until(due),
 			)
 
 			if j.async {
