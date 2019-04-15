@@ -13,7 +13,7 @@ cron_parser.go import https://github.com/robfig/cron/blob/master/parser.go , tha
 * dynamic modify job cron
 * dynamic add job
 * stop service job
-* add Join method for waiting all job exit
+* add Wait method for waiting all job exit
 * async & sync mode
 
 ## Usage
@@ -55,7 +55,7 @@ func run() error {
 	}
 
 	cron.Start()
-	cron.Join()
+	cron.Wait()
 }
 ```
 
@@ -205,7 +205,7 @@ func main() {
 	})
 
 	cron.Start()
-	cron.Join()
+	cron.Wait()
 }
 
 func stdout(srv, spec string) {

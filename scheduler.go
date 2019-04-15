@@ -195,7 +195,7 @@ func (c *CronSchduler) Start() {
 	})
 }
 
-func (c *CronSchduler) Join() {
+func (c *CronSchduler) Wait() {
 	c.wg.Wait()
 }
 
@@ -340,6 +340,7 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 
 	// release join counter
 	defer func() {
+		timer.Stop()
 		wg.Done()
 		j.exited = true
 	}()
@@ -359,7 +360,6 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 			}
 
 		case <-j.notifyChan:
-			// parse crontab spec again !
 			continue
 
 		case <-j.ctx.Done():
