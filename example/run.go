@@ -1,7 +1,5 @@
 package main
 
-// 测试crontab spec的格式
-
 import (
 	"log"
 	"time"
@@ -9,7 +7,7 @@ import (
 	"github.com/rfyiamcool/cronlib"
 )
 
-//启动多个任务
+// start multi job
 func main() {
 	cron := cronlib.New()
 
@@ -40,7 +38,21 @@ func main() {
 		}
 	}
 
-	// update test
+	// add job test
+	time.AfterFunc(5*time.Second, func() {
+		spec := "*/1 * * * * *"
+		srv := "risk.scan.total.new_add.1s"
+		job, _ := cronlib.NewJobModel(
+			spec,
+			func() {
+				stdout(srv, spec)
+			},
+		)
+		cron.UpdateJobModel(srv, job)
+		log.Println("reset finish", srv)
+	})
+
+	// update job test
 	time.AfterFunc(10*time.Second, func() {
 		spec := "*/3 * * * * *"
 		srv := "risk.scan.total.5s.to.3s"
@@ -56,29 +68,26 @@ func main() {
 
 	})
 
-	// kill test
-	time.AfterFunc(3*time.Second, func() {
-
+	// kill job test
+	time.AfterFunc(15*time.Second, func() {
 		srv := "risk.scan.total.1s"
 		log.Println("stoping", srv)
 		cron.StopService(srv)
 		log.Println("stop finish", srv)
-
 	})
 
-	time.AfterFunc(11*time.Second, func() {
-
+	// stop cron
+	time.AfterFunc(25*time.Second, func() {
 		srvPrefix := "risk"
 		log.Println("stoping srv prefix", srvPrefix)
 		cron.StopServicePrefix(srvPrefix)
-
 	})
 
 	cron.Start()
-	cron.Join()
+	log.Println("cron start")
+	cron.Wait()
 }
 
 func stdout(srv, spec string) {
 	log.Println(srv, spec)
 }
-
