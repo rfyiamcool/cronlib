@@ -348,8 +348,9 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 			} else {
 				j.do()
 			}
+
 			defualtLogger("info",
-				fmt.Sprintf("service: %s has been finished, time cost: %s, spec: %s",
+				fmt.Sprintf("scheduler service: %s has been finished, time cost: %s, spec: %s",
 					j.srv,
 					time.Since(startTS).String(),
 					j.spec,
@@ -359,11 +360,15 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 
 		timer        *time.Timer
 		lastNextTime time.Time
+		due          time.Time
+		interval     time.Duration
+
+		err error
 	)
 
 	// parse crontab spec
-	due, err := getNextDue(j.spec)
-	interval := time.Until(due)
+	due, err = getNextDue(j.spec)
+	interval = due.Sub(time.Now())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -390,12 +395,17 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 	for j.running {
 		select {
 		case <-timer.C:
+			if time.Now().Before(due) {
+				timer.Reset(
+					due.Sub(time.Now()) + 50*time.Millisecond,
+				)
+				continue
+			}
+
 			due, _ := getNextDueSafe(j.spec, lastNextTime)
 			lastNextTime = due
-			subTime := due.Sub(time.Now())
-			timer.Reset(
-				time.Until(due),
-			)
+			interval := due.Sub(time.Now())
+			timer.Reset(interval)
 
 			if j.async {
 				go doTimeCostFunc() // goroutine for per job
@@ -407,11 +417,12 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 				fmt.Sprintf("scheduler service: %s next time is %s, sub: %s",
 					j.srv,
 					due.String(),
-					subTime.String(),
+					interval.String(),
 				),
 			)
 
 		case <-j.notifyChan:
+			// parse crontab spec again !
 			continue
 
 		case <-j.ctx.Done():
