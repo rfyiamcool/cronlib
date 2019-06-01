@@ -179,7 +179,33 @@ func getNextDue(spec string) (time.Time, error) {
 		return time.Now(), err
 	}
 
+	// avoid time.sub
+	time.Sleep(10 * time.Millisecond)
 	due := sc.Next(time.Now())
+	return due, err
+}
+
+func getNextDueSafe(spec string, last time.Time) (time.Time, error) {
+	var (
+		due time.Time
+		err error
+	)
+
+	for {
+		due, err = getNextDue(spec)
+		if err != nil {
+			return due, err
+		}
+
+		if last.Equal(due) {
+			// avoid time.sub lost some accuracy, repeat do job.
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
+		break
+	}
+
 	return due, err
 }
 
@@ -311,6 +337,12 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 		// stdout do time cost
 		doTimeCostFunc = func() {
 			startTS := time.Now()
+			defualtLogger("info",
+				fmt.Sprintf("scheduler service: %s begin run",
+					j.srv,
+				),
+			)
+
 			if j.tryCatch {
 				tryCatch(j)
 			} else {
@@ -325,7 +357,8 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 			)
 		}
 
-		timer *time.Timer
+		timer        *time.Timer
+		lastNextTime time.Time
 	)
 
 	// parse crontab spec
@@ -334,6 +367,15 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 	if err != nil {
 		panic(err.Error())
 	}
+
+	lastNextTime = due
+	defualtLogger("info",
+		fmt.Sprintf("scheduler service: %s next time is %s, sub: %s",
+			j.srv,
+			due.String(),
+			interval.String(),
+		),
+	)
 
 	// int timer
 	timer = time.NewTimer(interval)
@@ -348,7 +390,9 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 	for j.running {
 		select {
 		case <-timer.C:
-			due, _ := getNextDue(j.spec)
+			due, _ := getNextDueSafe(j.spec, lastNextTime)
+			lastNextTime = due
+			subTime := due.Sub(time.Now())
 			timer.Reset(
 				time.Until(due),
 			)
@@ -358,6 +402,14 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 			} else {
 				doTimeCostFunc()
 			}
+
+			defualtLogger("info",
+				fmt.Sprintf("scheduler service: %s next time is %s, sub: %s",
+					j.srv,
+					due.String(),
+					subTime.String(),
+				),
+			)
 
 		case <-j.notifyChan:
 			continue
