@@ -11,8 +11,8 @@ func main() {
 	cron := cronlib.New()
 
 	specList := map[string]string{
-		"risk.scan.total.per.5s": "*/5 * * * * *",
-		"risk.scan.total.min.0s": "0 * * * * *",
+		"risk.scan.total.per.5s":  "*/5 * * * * *",
+		"risk.scan.total.min.0s":  "0 * * * * *",
 		"risk.scan.total.per.30s": "*/30 * * * * *",
 	}
 

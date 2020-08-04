@@ -75,6 +75,11 @@ func (c *CronSchduler) UpdateJobModel(srv string, model *JobModel) error {
 	return c.reset(srv, model, false, true)
 }
 
+// DynamicRegister - after cronlib already run, dynamic add a job, the job autostart by cronlib.
+func (c *CronSchduler) DynamicRegister(srv string, model *JobModel) error {
+	return c.reset(srv, model, false, true)
+}
+
 // reset - reset srv model
 func (c *CronSchduler) reset(srv string, model *JobModel, denyReplace, autoStart bool) error {
 	c.Lock()

@@ -2,9 +2,7 @@
 
 Cronlib is easy golang crontab library, support parse crontab and schedule cron jobs.
 
-**tks**
-
-cron_parser.go import https://github.com/robfig/cron/blob/master/parser.go , thank @robfig
+cron_parser.go import `https://github.com/robfig/cron/blob/master/parser.go`, thank @robfig
 
 ## Feature
 
@@ -18,44 +16,74 @@ cron_parser.go import https://github.com/robfig/cron/blob/master/parser.go , tha
 
 ## Usage
 
+see more [example](github.com/rfyiamcool/example)
+
 ### quick run
 
 ```go
-func run() error {
-	cron := cronlib.New()
+package main
 
-	specList := map[string]string{
-		"risk.scan.total.1s":       "*/1 * * * * *",
-		"risk.scan.total.2s":       "*/2 * * * * *",
-		"risk.scan.total.3s":       "*/3 * * * * *",
-		"risk.scan.total.4s":       "*/4 * * * * *",
-		"risk.scan.total.5s.to.3s": "*/5 * * * * *",
-	}
+import (
+	"log"
 
-	for srv, spec := range specList {
-		tspec := spec // copy
-		ssrv := srv   // copy
+	"github.com/rfyiamcool/cronlib"
+)
 
-		// create job
-		job, err := cronlib.NewJobModel(
-			spec,
-			func() {
-				stdout(ssrv, tspec)
-			},
-		)
-		if err != nil {
-			panic(err.Error())
-		}
+var (
+	cron = cronlib.New()
+)
 
-		// register srvName -> job
-		err = cron.Register(srv, job)
-		if err != nil {
-			panic(err.Error())
-		}
-	}
+func main() {
+	handleClean()
+	go start()
 
+	// cron already start, dynamic add job
+	handleBackup()
+
+	select {}
+}
+
+func start() {
 	cron.Start()
 	cron.Wait()
+}
+
+func handleClean() {
+	job, err := cronlib.NewJobModel(
+		"*/5 * * * * *",
+		func() {
+			pstdout("do clean gc action")
+		},
+	)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	err = cron.Register("clean", job)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+func handleBackup() {
+	job, err := cronlib.NewJobModel(
+		"*/5 * * * * *",
+		func() {
+			pstdout("do backup action")
+		},
+	)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	err = cron.DynamicRegister("backup", job)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+func pstdout(srv string) {
+	log.Println(srv)
 }
 ```
 
