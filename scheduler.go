@@ -56,9 +56,9 @@ func New() *CronSchduler {
 
 type CronSchduler struct {
 	running bool
-	tasks  map[string]*JobModel
-	ctx    context.Context
-	cancel context.CancelFunc
+	tasks   map[string]*JobModel
+	ctx     context.Context
+	cancel  context.CancelFunc
 
 	wg   *sync.WaitGroup
 	once *sync.Once
