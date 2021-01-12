@@ -55,6 +55,7 @@ func New() *CronSchduler {
 }
 
 type CronSchduler struct {
+	running bool
 	tasks  map[string]*JobModel
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -104,7 +105,7 @@ func (c *CronSchduler) reset(srv string, model *JobModel, denyReplace, autoStart
 	}
 
 	c.tasks[srv] = model
-	if autoStart {
+	if autoStart && c.running {
 		c.wg.Add(1)
 		go c.tasks[srv].runLoop(c.wg)
 	}
@@ -223,6 +224,7 @@ func (c *CronSchduler) Start() {
 			job.runLoop(c.wg)
 		}
 
+		c.running = true
 	})
 }
 
