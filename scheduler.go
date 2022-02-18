@@ -43,6 +43,7 @@ func SetPanicCaller(p panicType) {
 	panicCaller = p
 }
 
+// New - create CronSchduler
 func New() *CronSchduler {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &CronSchduler{
@@ -54,6 +55,7 @@ func New() *CronSchduler {
 	}
 }
 
+// CronSchduler
 type CronSchduler struct {
 	tasks  map[string]*JobModel
 	ctx    context.Context
@@ -138,6 +140,7 @@ func (c *CronSchduler) Stop() {
 		job.kill()
 		delete(c.tasks, srv)
 	}
+	c.cancel()
 }
 
 // StopService - stop job by serviceName
@@ -228,8 +231,16 @@ func (c *CronSchduler) Start() {
 	})
 }
 
+// Wait - if all jobs is exited, return.
 func (c *CronSchduler) Wait() {
 	c.wg.Wait()
+}
+
+// WaitStop - when stop cronlib controller, return.
+func (c *CronSchduler) WaitStop() {
+	select {
+	case <-c.ctx.Done():
+	}
 }
 
 func (c *CronSchduler) GetServiceCron(srv string) (*JobModel, error) {
