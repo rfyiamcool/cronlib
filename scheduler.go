@@ -91,8 +91,10 @@ func (c *CronSchduler) reset(srv string, model *JobModel, denyReplace, autoStart
 		return err
 	}
 
+	cctx, cancel := context.WithCancel(c.ctx)
+	model.ctx = cctx
+	model.cancel = cancel
 	model.srv = srv
-	model.ctx = c.ctx
 
 	oldModel, ok := c.tasks[srv]
 	if denyReplace && ok {
@@ -301,7 +303,9 @@ type JobModel struct {
 	// cron spec
 	spec string
 
+	// for control
 	ctx        context.Context
+	cancel     context.CancelFunc
 	notifyChan chan int
 
 	// break for { ... } loop
@@ -438,7 +442,7 @@ func (j *JobModel) run(wg *sync.WaitGroup) {
 
 func (j *JobModel) kill() {
 	j.running = false
-	close(j.notifyChan)
+	j.cancel()
 }
 
 func (j *JobModel) workerExited() bool {
