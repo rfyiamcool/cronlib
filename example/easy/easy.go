@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/rfyiamcool/cronlib"
 )
@@ -12,15 +13,23 @@ var (
 
 func main() {
 	handleClean()
-	go start()
 
-	// dynamic add
-	handleBackup()
+	time.AfterFunc(time.Duration(2*time.Second), func() {
+		// dynamic add
+		handleBackup()
+	})
 
-	select {}
-}
+	time.AfterFunc(
+		12*time.Second,
+		func() {
+			log.Println("stop clean")
+			cron.StopService("clean")
 
-func start() {
+			log.Println("stop backup")
+			cron.StopService("backup")
+		},
+	)
+
 	cron.Start()
 	cron.Wait()
 }
